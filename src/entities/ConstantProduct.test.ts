@@ -3,6 +3,7 @@ import { USDC_ADDRESS, WETH9_ADDRESS } from '../constants'
 import { ChainId } from '../enums'
 import { Token } from '.'
 import { computeConstantProductPoolAddress } from '../functions/computeConstantProductPoolAddress'
+import { address as constantProductPoolFactoryAddress } from '@sushiswap/trident/deployments/kovan/ConstantProductPoolFactory.json'
 
 // import { keccak256, pack } from '@ethersproject/solidity'
 
@@ -46,20 +47,14 @@ describe('computePoolAddress', () => {
     const twap = true
 
     const address = computeConstantProductPoolAddress({
-      factoryAddress: '0x2d7933851D0b372ffB810793Cf86D33177F6812f',
+      factoryAddress: constantProductPoolFactoryAddress,
       tokenA,
       tokenB,
       fee,
       twap
     })
 
-    // const address = getCreate2Address(
-    //   '0x2d7933851D0b372ffB810793Cf86D33177F6812f',
-    //   keccak256(['bytes'], [deployData]),
-    //   INIT_CODE_HASH
-    // )
-
-    expect(address).toEqual('0x0d4EC1428C59EBDEE041a7Caa2c84567218063f9')
+    expect(address).toEqual('0xDc3A5387c0bcd49b022C205bB9CB8bD9193322F3')
   })
 })
 
