@@ -2,6 +2,7 @@ import { RConstantProductPool, RouteStatus } from '../src/types/MultiRouterTypes
 
 import { BigNumber } from '@ethersproject/bignumber'
 import { findMultiRouting } from '../src/entities/MultiRouter'
+import { checkRouteResult } from './snapshots/snapshot'
 
 const gasPrice = 1 * 200 * 1e-9
 
@@ -59,6 +60,8 @@ describe('Multirouting for bridge topology', () => {
     expect(res?.status).toEqual(RouteStatus.Success)
     expect(res?.legs.length).toEqual(testPools.length)
     expect(res?.legs[res.legs.length - 1].swapPortion).toEqual(1)
+
+    checkRouteResult('bridge-1', res.totalAmountOut)
   })
 
   it('unknown gas price', () => {
@@ -68,6 +71,8 @@ describe('Multirouting for bridge topology', () => {
     expect(res?.status).toEqual(RouteStatus.Success)
     expect(res?.legs.length).toEqual(testPools.length)
     expect(res?.legs[res.legs.length - 1].swapPortion).toEqual(1)
+
+    checkRouteResult('bridge-2', res.totalAmountOut)
   })
 
   it('not connected tokens', () => {
@@ -85,6 +90,8 @@ describe('Multirouting for bridge topology', () => {
     expect(res?.status).toEqual(RouteStatus.Partial)
     expect(res?.legs.length).toEqual(testPools.length)
     expect(res?.legs[res.legs.length - 1].swapPortion).toEqual(1)
+
+    checkRouteResult('bridge-3', res.totalAmountOut)
   })
 
   it('Special case for _one_line_ coverage', () => {
@@ -105,6 +112,8 @@ describe('Multirouting for bridge topology', () => {
     expect(res).toBeDefined()
     expect(res?.status).toEqual(RouteStatus.Success)
     expect(res?.legs[res.legs.length - 1].swapPortion).toEqual(1)
+
+    checkRouteResult('bridge-4', res.totalAmountOut)
   })
 
   it('Varios step number check', () => {
@@ -115,6 +124,8 @@ describe('Multirouting for bridge topology', () => {
       expect(res).toBeDefined()
       expect(res?.status).toEqual(RouteStatus.Success)
       expect(res?.legs[res.legs.length - 1].swapPortion).toEqual(1)
+
+      checkRouteResult('bridge-5-' + s, res.totalAmountOut)
     })
   })
 
@@ -125,6 +136,8 @@ describe('Multirouting for bridge topology', () => {
     expect(res?.status).toEqual(RouteStatus.Success)
     expect(res?.legs.length).toEqual(testPools.length)
     expect(res?.legs[res.legs.length - 1].swapPortion).toEqual(1)
+
+    checkRouteResult('bridge-6', res.totalAmountOut)
   })
 
   it('Varios step number check for not equal prices', () => {
@@ -135,6 +148,8 @@ describe('Multirouting for bridge topology', () => {
       expect(res).toBeDefined()
       expect(res?.status).toEqual(RouteStatus.Success)
       expect(res?.legs[res.legs.length - 1].swapPortion).toEqual(1)
+
+      checkRouteResult('bridge-7-' + s, res.totalAmountOut)
     })
   })
 })

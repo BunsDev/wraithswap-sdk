@@ -3,6 +3,7 @@ import seedrandom from 'seedrandom'
 import { findMultiRouting, Graph } from '../src/entities/MultiRouter'
 import { RConstantProductPool, Pool, RToken, MultiRoute, RouteStatus, RouteLeg } from '../src/types/MultiRouterTypes'
 import { getBigNumber } from '../src/utils/MultiRouterMath'
+import { checkRouteResult } from './snapshots/snapshot'
 
 const testSeed = '2' // Change it to change random generator values
 const rnd: () => number = seedrandom(testSeed) // random [0, 1)
@@ -363,7 +364,7 @@ it(`Multirouter output is correct for 20 tokens and ${network.pools.length} pool
     expect(token0).not.toEqual(token1)
     const tokenBase = Math.floor(rnd() * 20)
     const amountIn = getRandom(rnd, 1e6, 1e24)
-    if (i !== 161) continue
+
     const route = findMultiRouting(
       network.tokens[token0],
       network.tokens[token1],
@@ -372,7 +373,6 @@ it(`Multirouter output is correct for 20 tokens and ${network.pools.length} pool
       network.tokens[tokenBase],
       network.gasPrice
     )
-    exportNetwork(network, network.tokens[token0], network.tokens[token1], route)
     checkRoute(
       network,
       network.tokens[token0],
@@ -382,5 +382,7 @@ it(`Multirouter output is correct for 20 tokens and ${network.pools.length} pool
       network.gasPrice,
       route
     )
+
+    checkRouteResult('top20-' + i, route.totalAmountOut)
   }
 })

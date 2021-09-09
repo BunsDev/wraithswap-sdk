@@ -257,7 +257,7 @@ export class Graph {
       const finish = e.vert1.bestSource === e
       const start = e.vert0.bestSource === e
       let label
-      if (e.bestEdgeIncome == -1) label = 'label: "low_liq"'
+      if (e.bestEdgeIncome === -1) label = 'label: "low_liq"'
       if (e.bestEdgeIncome !== 0) label = `label: "${print((e.bestEdgeIncome / initValue - 1) * 100, 3)}%"`
       const edgeValue = route.has(e) ? 'value: 2' : undefined
       let arrow
@@ -289,7 +289,7 @@ export class Graph {
       const total = `${print(v.bestTotal, 3)}`
       // const income = `${print((value/initValue-1)*100, 3)}%`
       // const total = `${print((v.bestTotal/initValue-1)*100, 3)}%`
-      const checkLine = v.checkLine == -1 ? undefined : `${v.checkLine}`
+      const checkLine = v.checkLine === -1 ? undefined : `${v.checkLine}`
       return [checkLine, income, total].filter(a => a !== undefined).join(':')
     }
 

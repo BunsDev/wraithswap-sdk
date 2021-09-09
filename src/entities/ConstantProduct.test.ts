@@ -41,8 +41,8 @@ describe('computePoolAddress', () => {
     const tokenA = new Token(ChainId.KOVAN, USDC_ADDRESS[ChainId.KOVAN], 6, 'USDC', 'USD Coin')
     const tokenB = new Token(ChainId.KOVAN, WETH9_ADDRESS[ChainId.KOVAN], 18, 'WETH', 'Wrapped Ether')
 
-    expect(tokenA.address).toEqual("0xb7a4F3E9097C08dA09517b5aB877F7a917224ede");
-    expect(tokenB.address).toEqual("0xd0A1E359811322d97991E03f863a0C30C2cF029C");
+    expect(tokenA.address).toEqual('0xb7a4F3E9097C08dA09517b5aB877F7a917224ede')
+    expect(tokenB.address).toEqual('0xd0A1E359811322d97991E03f863a0C30C2cF029C')
 
     const fee = 30
 
