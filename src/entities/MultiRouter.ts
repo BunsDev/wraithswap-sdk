@@ -158,7 +158,7 @@ class Edge {
   }
 }
 
-class Vertice {
+export class Vertice {
   token: RToken
   edges: Edge[]
 
@@ -544,6 +544,77 @@ export class Graph {
     const sorted = Array.from(sortOp.sort().keys()).map(k => nodes.get(k)) as Vertice[]
 
     return sorted
+  }
+
+  // topological sort
+  // if there is a cycle - returns [0, <List of envolved vertices in the cycle>]
+  // if there are no cycles but deadends- returns [3, <List of all envolved deadend vertices>]
+  // if there are no cycles or deadends- returns [2, <List of all envolved vertices topologically sorted>]
+  topologySort2(from: Vertice, to: Vertice): [number, Vertice[]] {
+    // undefined or 0 - not processed, 1 - in process, 2 - finished, 3 - dedend
+    const vertState = new Map<Vertice, number>()
+    const vertsFinished: Vertice[] = []
+    const foundCycle: Vertice[] = []
+    const foundDeadEndVerts: Vertice[] = []
+
+    // 0 - cycle was found and created, return
+    // 1 - during cycle creating
+    // 2 - vertex is processed ok
+    // 3 - dead end vertex
+    function topSortRecursive(current: Vertice): number {
+      const state = vertState.get(current)
+      if (state === 2 || state === 3) return state
+      if (state === 1) {
+        console.assert(foundCycle.length == 0, 'Internal Error 566')
+        foundCycle.push(current)
+        return 1
+      }
+      vertState.set(current, 1)
+
+      let successors2Exist = false
+      for (let i = 0; i < current.edges.length; ++i) {
+        const e = current.edges[i]
+        if (e.amountInPrevious === 0) continue
+        if (e.direction !== (e.vert0 === current)) continue
+        const res = topSortRecursive(current.getNeibour(e) as Vertice)
+        if (res === 0) return 0
+        if (res === 1) {
+          if (foundCycle[0] === current) return 0
+          else {
+            foundCycle.push(current)
+            return 1
+          }
+        }
+        if (res === 2) successors2Exist = true // Ok successors
+      }
+      if (successors2Exist) {
+        console.assert(current !== to, 'Internal Error 589')
+        vertsFinished.push(current)
+        vertState.set(current, 2)
+        return 2
+      } else {
+        if (current !== to) {
+          foundDeadEndVerts.push(current)
+          vertState.set(current, 3)
+          return 3
+        }
+        vertsFinished.push(current)
+        vertState.set(current, 2)
+        return 2
+      }
+    }
+
+    const res = topSortRecursive(from)
+    if (res === 0) return [0, foundCycle]
+    if (foundDeadEndVerts.length) return [3, foundDeadEndVerts]
+    ASSERT(() => {
+      if (vertsFinished[0] !== to) return false
+      if (vertsFinished[vertsFinished.length - 1] !== from) return false
+      return true
+    }, 'Internal Error 614')
+    if (res === 2) return [2, vertsFinished.reverse()]
+    console.assert(true, 'Internal Error 612')
+    return [1, []]
   }
 }
 
