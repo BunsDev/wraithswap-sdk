@@ -240,7 +240,7 @@ function checkRoute(
   if (route.status !== RouteStatus.NoWay) expect(route.amountOut).toBeGreaterThan(0)
   const outPriceToIn = network.prices[parseInt(to.name)] / network.prices[parseInt(from.name)]
   // Slippage is always not-negative
-  expect(route.amountOut).toBeLessThanOrEqual((route.amountIn / outPriceToIn) * 1.001)
+  expect(route.amountOut).toBeLessThanOrEqual((route.amountIn / outPriceToIn) * 1.002)
 
   // gasSpent checks
   const poolMap = new Map<string, Pool>()
@@ -356,9 +356,9 @@ it('Token price calculation is correct', () => {
     }
   })
 })
-debugger
+
 it(`Multirouter output is correct for 20 tokens and ${network.pools.length} pools`, () => {
-  for (var i = 0; i < 100; ++i) {
+  for (var i = 0; i < 200; ++i) {
     const token0 = Math.floor(rnd() * 20)
     const token1 = (token0 + 1 + Math.floor(rnd() * 19)) % 20
     expect(token0).not.toEqual(token1)

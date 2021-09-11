@@ -1,15 +1,15 @@
 import { BigNumber } from '@ethersproject/bignumber'
 import { Pool, RToken, RouteLeg, MultiRoute, RouteStatus } from '../types/MultiRouterTypes'
 import { ASSERT, calcInByOut, calcOutByIn, closeValues, calcPrice } from '../utils/MultiRouterMath'
-import TopologicalSort from '../utils/TopologicalSort'
 
-class Edge {
+export class Edge {
   readonly GasConsumption = 40_000
   readonly MINIMUM_LIQUIDITY = 1000
   pool: Pool
   vert0: Vertice
   vert1: Vertice
 
+  canBeUsed: boolean
   direction: boolean
   amountInPrevious: number // How many liquidity were passed from vert0 to vert1
   amountOutPrevious: number // How many liquidity were passed from vert0 to vert1
@@ -21,6 +21,7 @@ class Edge {
     this.vert1 = v1
     this.amountInPrevious = 0
     this.amountOutPrevious = 0
+    this.canBeUsed = true
     this.direction = true
     this.bestEdgeIncome = 0
   }
@@ -457,8 +458,8 @@ export class Graph {
       e.direction = true
     })
     let output = 0
-    let gasSpent = 0
-    let totalOutput = 0
+    let gasSpentInit = 0
+    //let totalOutput = 0
     let totalrouted = 0
     let step
     for (step = 0; step < routeValues.length; ++step) {
@@ -467,37 +468,49 @@ export class Graph {
         break
       } else {
         output += p.output
-        gasSpent += p.gasSpent
-        totalOutput += p.totalOutput
+        gasSpentInit += p.gasSpent
+        //totalOutput += p.totalOutput
         this.addPath(this.tokens.get(from), this.tokens.get(to), p.path)
         totalrouted += routeValues[step]
       }
     }
+    if (step == 0)
+      return {
+        status: RouteStatus.NoWay,
+        amountIn: 0,
+        amountOut: 0,
+        legs: [],
+        gasSpent: 0,
+        totalAmountOut: 0
+      }
     let status
-    if (step === 0) status = RouteStatus.NoWay
-    else if (step < routeValues.length) status = RouteStatus.Partial
+    if (step < routeValues.length) status = RouteStatus.Partial
     else status = RouteStatus.Success
+
+    const fromVert = this.tokens.get(from) as Vertice
+    const toVert = this.tokens.get(to) as Vertice
+    const [legs, gasSpent] = this.getRouteLegs(fromVert, toVert)
+    console.assert(gasSpent <= gasSpentInit, 'Internal Error 491')
 
     return {
       status,
       amountIn: amountIn * totalrouted,
       amountOut: output,
-      legs: this.getRouteLegs(),
-      gasSpent: gasSpent,
-      totalAmountOut: totalOutput
+      legs,
+      gasSpent,
+      totalAmountOut: output - gasSpent * toVert.gasPrice
     }
   }
 
-  getRouteLegs(): RouteLeg[] {
-    const nodes = this.topologySort()
+  getRouteLegs(from: Vertice, to: Vertice): [RouteLeg[], number] {
+    const nodes = this.cleanTopology(from, to)
     const legs: RouteLeg[] = []
+    let gasSpent = 0
     nodes.forEach(n => {
-      const outEdges = n.edges
-        .map(e => {
-          const from = this.edgeFrom(e)
-          return from ? [e, from[0], from[1]] : [e]
-        })
-        .filter(e => e[1] === n)
+      const outEdges = this.getOutputEdges(n).map(e => {
+        const from = this.edgeFrom(e)
+        return from ? [e, from[0], from[1]] : [e]
+      })
 
       let outAmount = outEdges.reduce((a, b) => a + (b[2] as number), 0)
       if (outAmount <= 0) return
@@ -512,11 +525,12 @@ export class Graph {
           swapPortion: quantity,
           absolutePortion: p / total
         })
+        gasSpent += (e[0] as Edge).pool.swapGasCost
         outAmount -= p
       })
       console.assert(outAmount / total < 1e-12, 'Error 281')
     })
-    return legs
+    return [legs, gasSpent]
   }
 
   edgeFrom(e: Edge): [Vertice, number] | undefined {
@@ -526,37 +540,85 @@ export class Graph {
 
   getOutputEdges(v: Vertice): Edge[] {
     return v.edges.filter(e => {
-      const from = this.edgeFrom(e)
-      if (from === undefined) return false
-      return from[0] === v
+      if (!e.canBeUsed) return false
+      if (e.amountInPrevious === 0) return false
+      if (e.direction !== (e.vert0 === v)) return false
+      return true
     })
   }
 
-  topologySort(): Vertice[] {
-    const nodes = new Map<string, Vertice>()
-    this.vertices.forEach(v => nodes.set(v.token.name, v))
-    const sortOp = new TopologicalSort(nodes)
-    this.edges.forEach(e => {
-      if (e.amountInPrevious === 0) return
-      if (e.direction) sortOp.addEdge(e.vert0.token.name, e.vert1.token.name)
-      else sortOp.addEdge(e.vert1.token.name, e.vert0.token.name)
+  getInputEdges(v: Vertice): Edge[] {
+    return v.edges.filter(e => {
+      if (!e.canBeUsed) return false
+      if (e.amountInPrevious === 0) return false
+      if (e.direction === (e.vert0 === v)) return false
+      return true
     })
-    const sorted = Array.from(sortOp.sort().keys()).map(k => nodes.get(k)) as Vertice[]
+  }
 
-    return sorted
+  // removes all cycles if there are any, then removes all dead end could appear after cycle removing
+  // Returns clean result topologically sorted
+  cleanTopology(from: Vertice, to: Vertice): Vertice[] {
+    let result = this.topologySort(from, to)
+    if (result[0] !== 2) {
+      console.assert(result[0] === 0, 'Internal Error 554')
+      while (result[0] === 0) {
+        this.removeWeakestEdge(result[1])
+        result = this.topologySort(from, to)
+      }
+      if (result[0] === 3) {
+        this.removeDeadEnds(result[1])
+        result = this.topologySort(from, to)
+      }
+      console.assert(result[0] === 2, 'Internal Error 563')
+      if (result[0] !== 2) return []
+    }
+    return result[1]
+  }
+
+  removeDeadEnds(verts: Vertice[]) {
+    verts.forEach(v => {
+      this.getInputEdges(v).forEach(e => {
+        e.canBeUsed = false
+      })
+    })
+  }
+
+  removeWeakestEdge(verts: Vertice[]) {
+    let minVert: Vertice, minVertNext: Vertice
+    let minOutput = Number.MAX_VALUE
+    verts.forEach((v1, i) => {
+      const v2 = i === 0 ? verts[verts.length - 1] : verts[i - 1]
+      let out = 0
+      this.getOutputEdges(v1).forEach(e => {
+        if (v1.getNeibour(e) !== v2) return
+        out += e.direction ? e.amountOutPrevious : e.amountInPrevious
+      })
+      if (out < minOutput) {
+        minVert = v1
+        minVertNext = v2
+        minOutput = out
+      }
+    })
+    // @ts-ignore
+    this.getOutputEdges(minVert).forEach(e => {
+      if (minVert.getNeibour(e) !== minVertNext) return
+      e.canBeUsed = false
+    })
   }
 
   // topological sort
   // if there is a cycle - returns [0, <List of envolved vertices in the cycle>]
   // if there are no cycles but deadends- returns [3, <List of all envolved deadend vertices>]
   // if there are no cycles or deadends- returns [2, <List of all envolved vertices topologically sorted>]
-  topologySort2(from: Vertice, to: Vertice): [number, Vertice[]] {
+  topologySort(from: Vertice, to: Vertice): [number, Vertice[]] {
     // undefined or 0 - not processed, 1 - in process, 2 - finished, 3 - dedend
     const vertState = new Map<Vertice, number>()
     const vertsFinished: Vertice[] = []
     const foundCycle: Vertice[] = []
     const foundDeadEndVerts: Vertice[] = []
 
+    const that = this
     // 0 - cycle was found and created, return
     // 1 - during cycle creating
     // 2 - vertex is processed ok
@@ -572,10 +634,9 @@ export class Graph {
       vertState.set(current, 1)
 
       let successors2Exist = false
-      for (let i = 0; i < current.edges.length; ++i) {
-        const e = current.edges[i]
-        if (e.amountInPrevious === 0) continue
-        if (e.direction !== (e.vert0 === current)) continue
+      const outEdges = that.getOutputEdges(current)
+      for (let i = 0; i < outEdges.length; ++i) {
+        const e = outEdges[i]
         const res = topSortRecursive(current.getNeibour(e) as Vertice)
         if (res === 0) return 0
         if (res === 1) {

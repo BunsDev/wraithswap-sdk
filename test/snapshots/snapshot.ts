@@ -31,7 +31,7 @@ export function checkRouteResult(id: string, amountOut: number) {
     snapshotMap.set(id, amountOut)
     fs.writeFileSync(__dirname + '\\' + SNAPSHOT_FILE, `"${id}" ${amountOut}\n`, { encoding: 'utf8', flag: 'a' })
   } else {
-    const increase = (amountOut / prevOut - 1) * 100
+    const increase = prevOut === 0 ? amountOut - prevOut : (amountOut / prevOut - 1) * 100
     console.assert(increase >= -1e-4, `Routing result ${id} ${increase}%`)
     fs.writeFileSync(__dirname + '\\' + REPORT_FILE, `"${id}": ${prevOut} -> ${amountOut} (${increase}%)\n`, {
       encoding: 'utf8',
