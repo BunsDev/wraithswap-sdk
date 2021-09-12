@@ -406,7 +406,7 @@ it('random topology clean test', () => {
       g = createCorrectTopology(t, 10)
     } while (g[0].topologySort(g[1], g[2])[0] !== 0) // find topology with cycles
 
-    const nodes = g[0].cleanTopology(g[1], g[2])
+    const [nodes] = g[0].cleanTopology(g[1], g[2])
     const res = g[0].topologySort(g[1], g[2])
     expect(res[0]).toEqual(2)
     expect(res[1].length).toEqual(nodes.length)

@@ -339,6 +339,7 @@ function exportNetwork(network: Network, from: RToken, to: RToken, route: MultiR
 }
 
 const network = createNetwork(rnd, 20)
+
 it('Token price calculation is correct', () => {
   const baseTokenIndex = 0
   const g = new Graph(network.pools, network.tokens[baseTokenIndex], network.gasPrice)
