@@ -1,17 +1,17 @@
 {
-  "name": "@sushiswap/sdk",
+  "name": "@wraithswap/sdk",
   "license": "MIT",
   "version": "5.0.0-canary.72",
-  "description": "🛠 An SDK for building applications on top of SushiSwap.",
+  "description": "🛠 An SDK for building applications on top of WraithSwap.",
   "main": "dist/index.js",
   "typings": "dist/index.d.ts",
   "files": [
     "dist"
   ],
-  "repository": "https://github.com/sushiswap/sushiswap-sdk",
+  "repository": "https://github.com/sy-finance/wraithswap-sdk",
   "keywords": [
-    "sushiswap",
-    "ethereum",
+    "wraithswap",
+    "fantom",
     "sdk"
   ],
   "module": "dist/sdk.esm.js",
