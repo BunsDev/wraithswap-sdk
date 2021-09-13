@@ -1,8 +1,8 @@
-# Sushiswap SDK
+# Wraithswap SDK
 
 In-depth documentation on this SDK is available at [uniswap.org](https://uniswap.org/docs/v2/SDK/getting-started/).
 
-This modifies uniswap-sdk's UniswapV2Factory address. The new address for sushiswap is  `0xC0AEe478e3658e2610c5F7A4A2E1777cE9e4f2Ac`.
+This modifies uniswap-sdk's UniswapV2Factory address. The new address for wraithswap is  `0xCC738D2fDE18fe66773b84c8E6C869aB233766D1`.
 
 ## Running tests
 
@@ -11,13 +11,13 @@ To run the tests, follow these steps. You must have at least node v10 and [yarn]
 First clone the repository:
 
 ```sh
-git clone https://github.com/sushiswap/sushiswap-sdk.git
+git clone https://github.com/sy-finance/wraithswap-sdk.git
 ```
 
 Move into the sushiswap-sdk working directory
 
 ```sh
-cd sushiswap-sdk/
+cd wraithswap-sdk/
 ```
 
 Install dependencies
